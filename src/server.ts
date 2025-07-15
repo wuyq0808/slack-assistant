@@ -3,7 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import OpenAI from 'openai';
+import { AzureOpenAI } from 'openai';
 import { SlackMCPClient } from './lib/slack-client.js';
 import { SlackStreamableMCPServer } from './mcp-streamable-server.js';
 // Simple HTTP MCP server - no SDK transport needed
@@ -21,9 +21,11 @@ app.use(express.json());
 // Initialize Slack client (will be created per request with dynamic token)
 let slackClient: SlackMCPClient;
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+// Initialize AzureOpenAI client
+const openai = new AzureOpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  apiVersion: process.env.OPENAI_API_VERSION,
+  endpoint: process.env.AZURE_OPENAI_ENDPOINT
 });
 
 // Homepage route with basic URL authentication
@@ -95,26 +97,14 @@ app.post('/api/openai/generate', async (req, res) => {
     }
 
     const response = await openai.responses.create({
-      model: "gpt-4o-mini",
-      input: input,
-      tools: [
-        {
-          type: "mcp",
-          server_label: "slack-mcp",
-          server_url: "https://slack-assistant-118769120637.us-central1.run.app/api/mcp",
-          headers: {
-            Authorization: `Bearer ${process.env.API_KEY}`,
-            'X-Slack-User-Token': slack_user_token
-          },
-          require_approval: "never"
-        }
-      ]
+      model: "cogdep-auction-data-llm-0-swedencentral",
+      input: input
     });
 
     res.json({
       success: true,
       output: response.output_text || 'No response generated',
-      model: "gpt-4o-mini",
+      model: "cogdep-auction-data-llm-0-swedencentral",
       usage: response.usage
     });
 
